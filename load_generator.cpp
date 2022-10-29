@@ -64,6 +64,8 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
+    string response = "";
+
     while (1)
     {
         bzero(buffer, 256);
@@ -79,7 +81,13 @@ int main(int argc, char *argv[])
             cout << "Server closed connection" << endl;
             break;
         }
+
+        response += buffer;
     }
+
+#if SANITY_CHECK
+    cout << response << endl;
+#endif
 
     close(sockfd);
 

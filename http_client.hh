@@ -10,6 +10,9 @@
 #include <string>
 #include <vector>
 
+// Configuration
+#define SANITY_CHECK 1
+
 using namespace std;
 
 void int_handler(int);
