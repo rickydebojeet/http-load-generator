@@ -9,13 +9,18 @@
 #include <signal.h>
 #include <string>
 #include <vector>
+#include <sys/time.h>
 
 // Configuration
+#define HOST "localhost"
+#define PORT 8080
 #define SANITY_CHECK 1
 
 using namespace std;
 
 void int_handler(int);
+
+float time_diff(struct timeval *, struct timeval *);
 
 struct HTTP_Request
 {
