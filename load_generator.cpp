@@ -1,12 +1,4 @@
-#include <iostream>
-#include <string.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include <signal.h>
-
-using namespace std;
-
-void int_handler(int);
+#include "http_client.hh"
 
 int sockfd;
 struct sigaction act;
@@ -26,7 +18,7 @@ int main(int argc, char *argv[])
 
     if (argc < 3)
     {
-        cerr << "Usage ./" << argv[0] << " hostname port" << endl;
+        cerr << "Usage " << argv[0] << " hostname port" << endl;
         exit(EXIT_FAILURE);
     }
 
@@ -60,19 +52,20 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    // Read and write to the socket
-    do
+    cout << "Please enter the url: ";
+    bzero(buffer, 256);
+    cin >> buffer;
+    string url = buffer;
+    string request = send_request(url);
+    n = write(sockfd, request.c_str(), strlen(request.c_str()));
+    if (n < 0)
     {
-        cout << "Please enter the message: ";
-        bzero(buffer, 256);
-        cin >> buffer;
-        n = write(sockfd, buffer, strlen(buffer));
-        if (n < 0)
-        {
-            cerr << "Error writing to socket" << endl;
-            exit(EXIT_FAILURE);
-        }
+        cerr << "Error writing to socket" << endl;
+        exit(EXIT_FAILURE);
+    }
 
+    while (1)
+    {
         bzero(buffer, 256);
         n = read(sockfd, buffer, 255);
 
@@ -86,11 +79,7 @@ int main(int argc, char *argv[])
             cout << "Server closed connection" << endl;
             break;
         }
-
-        cout << "Server Response: \n"
-             << buffer << endl;
-
-    } while (n > 0);
+    }
 
     close(sockfd);
 
