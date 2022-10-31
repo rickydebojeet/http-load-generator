@@ -1,41 +1,111 @@
 #include "http_client.hh"
 
-int sockfd;
-struct sigaction act;
+FILE *log_file;
+bool done;
 
 int main(int argc, char *argv[])
 {
-    int portno, test_duration, n;
-    float think_time;
+    int test_duration, user_count;
+    float think_time, throughput, response_time;
 
+    if (argc != 4)
+    {
+        cerr << "Usage " << argv[0] << " user_count think_time test_duration" << endl;
+        exit(EXIT_FAILURE);
+    }
+
+    user_count = atoi(argv[1]);
+    think_time = atof(argv[2]);
+    test_duration = atoi(argv[3]);
+
+    cout << "Host: " << HOST << endl;
+    cout << "Port: " << PORT << endl;
+    cout << "User Count: " << user_count << endl;
+    cout << "Think Time: " << think_time << endl;
+    cout << "Test Duration: " << test_duration << endl;
+
+    // Opening log file
+    log_file = fopen("load_gen.log", "w");
+
+    fprintf(log_file, "Host: %s\n", HOST);
+    fprintf(log_file, "Port: %d\n", PORT);
+    fprintf(log_file, "User Count: %d\n", user_count);
+    fprintf(log_file, "Think Time: %f\n", think_time);
+    fprintf(log_file, "Test Duration: %d\n", test_duration);
+
+    pthread_t threads[user_count];
+    struct user_info info[user_count];
     struct timeval start_time, end_time;
 
+    // Starting timer for the load test
+    gettimeofday(&start_time, NULL);
+    done = false;
+
+    for (int i = 0; i < user_count; i++)
+    {
+        // Initializing user info
+        info[i].user_id = i;
+        info[i].hostname = HOST;
+        info[i].portno = PORT;
+        info[i].think_time = think_time;
+        info[i].total_rtt = 0;
+        // Creating threads
+        if (pthread_create(&threads[i], NULL, &user_routine, &info[i]) != 0)
+        {
+            cerr << "Error: Could not create thread " << i << endl;
+            exit(EXIT_FAILURE);
+        }
+        fprintf(log_file, "Created Thread %d\n", i);
+    }
+
+    // Waiting for test duration
+    sleep(test_duration);
+
+    fprintf(log_file, "Main Thread Woke up!!\n");
+
+    gettimeofday(&end_time, NULL);
+    done = true;
+
+    // Waiting for all threads to finish
+    for (int i = 0; i < user_count; i++)
+    {
+        pthread_join(threads[i], NULL);
+    }
+
+    // Calculating average throughput and response time
+    throughput = 0;
+    response_time = 0;
+    for (int i = 0; i < user_count; i++)
+    {
+        throughput += info[i].total_count;
+        response_time += (info[i].total_rtt / info[i].total_count);
+    }
+    response_time /= user_count;
+    throughput /= test_duration;
+
+    fprintf(log_file, "\n\nAverage Throughput: %f\n", throughput);
+    fprintf(log_file, "Average Response Time: %f\n", response_time);
+
+    // Closing log file
+    fclose(log_file);
+
+    return 0;
+}
+
+void *user_routine(void *args)
+{
+    struct user_info *info = (struct user_info *)args;
+
+    int sockfd, portno, n;
     char buffer[256];
+    struct timeval start, end;
 
     struct hostent *server;
     struct sockaddr_in serv_addr;
 
-    act.sa_handler = int_handler; // set signal handler for parent
-
-    sigaction(SIGINT, &act, 0); // set interrupt signal handler for parent
-
-    if (argc != 3)
-    {
-        cerr << "Usage " << argv[0] << " think_time test_duration" << endl;
-        exit(EXIT_FAILURE);
-    }
-
-    think_time = atof(argv[1]);
-    test_duration = atoi(argv[2]);
-
-    cout << "Host: " << HOST << endl;
-    cout << "Port: " << PORT << endl;
-    cout << "Think Time: " << think_time << endl;
-    cout << "Test Duration: " << test_duration << endl;
-
     // Get the server address
-    portno = PORT;
-    server = gethostbyname(HOST);
+    portno = info->portno;
+    server = gethostbyname(info->hostname);
     if (server == NULL)
     {
         cerr << "Error, no such host" << endl;
@@ -48,18 +118,17 @@ int main(int argc, char *argv[])
     bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
     serv_addr.sin_port = htons(portno);
 
-    gettimeofday(&start_time, NULL);
-
-    // Create a socket
-
     while (1)
     {
+        gettimeofday(&start, NULL);
+        // Create a socket
         sockfd = socket(AF_INET, SOCK_STREAM, 0);
         if (sockfd < 0)
         {
             cerr << "Error opening socket" << endl;
             exit(EXIT_FAILURE);
         }
+
         // Connect to the server
         if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
         {
@@ -68,10 +137,10 @@ int main(int argc, char *argv[])
         }
 
         // cout << "Please enter the url: ";
-        bzero(buffer, 256);
+        // bzero(buffer, 256);
         // cin >> buffer;
         // string url = buffer;
-        string url = "/index.html";
+        string url = URL;
 
         string request = send_request(url);
         n = write(sockfd, request.c_str(), strlen(request.c_str()));
@@ -82,7 +151,6 @@ int main(int argc, char *argv[])
         }
 
         string response = "";
-
         while (1)
         {
             bzero(buffer, 256);
@@ -101,32 +169,25 @@ int main(int argc, char *argv[])
 
             response += buffer;
         }
+        close(sockfd);
 
-        sleep(think_time);
+        gettimeofday(&end, NULL);
+        float elapsed_time = time_diff(&start, &end);
 
-        gettimeofday(&end_time, NULL);
-        int elapsed_time = time_diff(&start_time, &end_time);
-
-#if SANITY_CHECK
-        cout << "Response: " << endl;
-        cout << response << endl;
-        cout << "Elapsed Time: " << elapsed_time << endl;
-#endif
-        if (elapsed_time >= test_duration)
+        if (done)
         {
             break;
         }
-        close(sockfd);
+
+        // Updating user metrics
+        info->total_rtt += elapsed_time;
+        info->total_count++;
+
+        sleep(info->think_time);
     }
-
-    return 0;
-}
-
-void int_handler(int p)
-{
-    cout << "\nClosing the connection." << endl;
-    close(sockfd);
-    exit(EXIT_SUCCESS);
+    fprintf(log_file, "Thread #%d finished\n", info->user_id);
+    fflush(log_file);
+    pthread_exit(NULL);
 }
 
 float time_diff(struct timeval *t1, struct timeval *t2)

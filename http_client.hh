@@ -8,19 +8,19 @@
 #include <netdb.h>
 #include <signal.h>
 #include <string>
-#include <vector>
 #include <sys/time.h>
+#include <pthread.h>
 
 // Configuration
 #define HOST "localhost"
+#define URL "/index.html"
 #define PORT 8080
 #define SANITY_CHECK 1
 
 using namespace std;
 
-void int_handler(int);
-
 float time_diff(struct timeval *, struct timeval *);
+void *user_routine(void *args);
 
 struct HTTP_Request
 {
@@ -34,6 +34,21 @@ struct HTTP_Request
     string get_string(); // Return the string representation of the HTTP Request
 
     HTTP_Request(string url); // Constructor
+};
+
+struct user_info
+{
+    // User id
+    int user_id;
+
+    // socket info
+    int portno;
+    char *hostname;
+    float think_time;
+
+    // user metrics
+    int total_count;
+    float total_rtt;
 };
 
 string send_request(string url);
