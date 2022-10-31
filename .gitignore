@@ -34,3 +34,6 @@ generator
 
 # VSCode
 .vscode
+
+# Logs
+*.log
