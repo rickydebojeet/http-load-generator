@@ -23,6 +23,7 @@ int main(int argc, char *argv[])
     cout << "User Count: " << user_count << endl;
     cout << "Think Time: " << think_time << endl;
     cout << "Test Duration: " << test_duration << endl;
+    cout << "Testing ..." << endl;
 
     // Opening log file
     log_file = fopen("load_gen.log", "w");
@@ -85,6 +86,9 @@ int main(int argc, char *argv[])
 
     fprintf(log_file, "\n\nAverage Throughput: %f\n", throughput);
     fprintf(log_file, "Average Response Time: %f\n", response_time);
+
+    cout << "\n\nAverage Throughput: " << throughput << endl;
+    cout << "Average Response Time: " << response_time << endl;
 
     // Closing log file
     fclose(log_file);
@@ -163,12 +167,17 @@ void *user_routine(void *args)
             }
             else if (n == 0)
             {
+#if SANITY_CHECK
                 cout << "Server closed connection" << endl;
+#endif
                 break;
             }
 
             response += buffer;
         }
+#if OUTPUT
+        cout << "Response: " << response << endl;
+#endif
         close(sockfd);
 
         gettimeofday(&end, NULL);

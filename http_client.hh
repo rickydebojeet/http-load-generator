@@ -15,7 +15,8 @@
 #define HOST "localhost"
 #define URL "/index.html"
 #define PORT 8080
-#define SANITY_CHECK 1
+#define SANITY_CHECK 0
+#define OUTPUT 0
 
 using namespace std;
 
