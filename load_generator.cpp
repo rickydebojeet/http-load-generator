@@ -6,7 +6,7 @@ bool done;
 int main(int argc, char *argv[])
 {
     int test_duration, user_count;
-    float think_time, throughput, response_time;
+    float think_time, throughput = 0, response_time = 0;
 
     if (argc != 4)
     {
@@ -18,12 +18,12 @@ int main(int argc, char *argv[])
     think_time = atof(argv[2]);
     test_duration = atoi(argv[3]);
 
-    cout << "Host: " << HOST << endl;
-    cout << "Port: " << PORT << endl;
-    cout << "User Count: " << user_count << endl;
-    cout << "Think Time: " << think_time << endl;
-    cout << "Test Duration: " << test_duration << endl;
-    cout << "Testing ..." << endl;
+    cout << "Host: " << HOST << endl
+         << "Port: " << PORT << endl
+         << "User Count: " << user_count << endl
+         << "Think Time: " << think_time << endl
+         << "Test Duration: " << test_duration << endl
+         << "Testing ..." << endl;
 
     // Opening log file
     log_file = fopen("load_gen.log", "w");
@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
     fprintf(log_file, "Test Duration: %d\n", test_duration);
 
     pthread_t threads[user_count];
-    struct user_info info[user_count];
+    struct user_info *info = (user_info *)malloc(sizeof(struct user_info) * user_count);
     struct timeval start_time, end_time;
 
     // Starting timer for the load test
@@ -74,8 +74,6 @@ int main(int argc, char *argv[])
     }
 
     // Calculating average throughput and response time
-    throughput = 0;
-    response_time = 0;
     for (int i = 0; i < user_count; i++)
     {
         throughput += info[i].total_count;
@@ -87,8 +85,8 @@ int main(int argc, char *argv[])
     fprintf(log_file, "\n\nAverage Throughput: %f\n", throughput);
     fprintf(log_file, "Average Response Time: %f\n", response_time);
 
-    cout << "\n\nAverage Throughput: " << throughput << endl;
-    cout << "Average Response Time: " << response_time << endl;
+    cout << "\n\nAverage Throughput: " << throughput << endl
+         << "Average Response Time: " << response_time << endl;
 
     // Closing log file
     fclose(log_file);
