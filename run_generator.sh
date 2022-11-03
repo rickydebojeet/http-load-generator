@@ -12,23 +12,17 @@ USER_COUNT='
 80
 90
 100
-200
-300
-400
-500
-600
-700
-800
-900
-1000
 '
 
+# Variables
 EXECUTABLE_NAME="generator"
-THINK_TIME="1"
+THINK_TIME="0.1"
 TEST_DURATION="60"
-LOG_FILE="load_gen.log"
 CPU="2-15"
+COUNTER=1
+END=20
 
+# Function for the progress bar
 function ProgressBar {
 # Process data
     let _progress=(${1}*100/${2}*100)/100
@@ -37,28 +31,36 @@ function ProgressBar {
 # Build progressbar string lengths
     _fill=$(printf "%${_done}s")
     _empty=$(printf "%${_left}s")
-
-# 1.2 Build progressbar strings and print the ProgressBar line
-# 1.2.1 Output example:                           
-# 1.2.1.1 Progress : [########################################] 100%
 printf "\rProgress : [${_fill// /#}${_empty// /-}] ${_progress}%%"
 }
-_end=100
-
 
 # Compile the load generator
 make clean
 make
 
-# Make directory for results
+# Make directory for results and generate the dat file
 mkdir -p results
+touch results.dat
+> results.dat
+echo -n "Load Level(users)	Throughput(req\s)	Response Time(ms)
+" >> results.dat
 
 # Run the load generator for different number of users
 for i in ${USER_COUNT}; do
-    ProgressBar ${i} ${_end}
-    taskset -c ${CPU} ./${EXECUTABLE_NAME} ${i} ${THINK_TIME} ${TEST_DURATION} >> runlog.txt
-    mv ${LOG_FILE} results/${i}_${LOG_FILE}
+    ProgressBar ${COUNTER} ${END}
+    taskset -a -c ${CPU} ./${EXECUTABLE_NAME} ${i} ${THINK_TIME} ${TEST_DURATION} >> runlog.log
+	echo -n "${i}	" | tr '\n' ' ' >> results.dat 
+	cat load_gen.log | grep "Average Throughput:" | cut -d ' ' -f 3 | tr '\n' ' ' >> results.dat
+	cat load_gen.log | grep "Average Response Time:" | cut -d ' ' -f 4 >> results.dat
+    mv load_gen.log results/${i}_load_gen.log
+    COUNTER=$((COUNTER+1))
     echo "Done with ${i} users
     
-    " >> runlog.txt
+    " >> runlog.log
 done
+
+python3 plot.py results.dat results.png "Load Testing" "Throughput (req\s)" "Response time (ms)"
+mv results.dat results/results.dat
+mv results.png results/results.png
+
+echo Done!!
