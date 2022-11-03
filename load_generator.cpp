@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
     throughput /= test_duration;
 
     fprintf(log_file, "\n\nAverage Throughput: %f\n", throughput);
-    fprintf(log_file, "Average Response Time: %f\n", response_time);
+    fprintf(log_file, "Average Response Time: %f\n", response_time * 1000);
 
     cout << "\n\nAverage Throughput: " << throughput << endl
          << "Average Response Time: " << response_time << endl;
