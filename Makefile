@@ -9,3 +9,4 @@ generator: $(CPP_FILE) $(HTTP_CLIENT_FILE)
 
 clean:
 	rm -f generator
+	rm -r results
