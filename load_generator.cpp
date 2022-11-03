@@ -148,8 +148,10 @@ void *user_routine(void *args)
         n = write(sockfd, request.c_str(), strlen(request.c_str()));
         if (n < 0)
         {
+#if FAULT_EXIT
             cerr << "Error writing to socket" << endl;
             exit(EXIT_FAILURE);
+#endif
         }
 
         string response = "";
@@ -160,8 +162,10 @@ void *user_routine(void *args)
 
             if (n < 0)
             {
+#if FAULT_EXIT
                 cerr << "Error reading from socket" << endl;
                 exit(EXIT_FAILURE);
+#endif
             }
             else if (n == 0)
             {

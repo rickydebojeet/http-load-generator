@@ -17,6 +17,7 @@
 #define PORT 8080
 #define SANITY_CHECK 0
 #define OUTPUT 0
+#define FAULT_EXIT 0
 
 using namespace std;
 
