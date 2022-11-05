@@ -46,6 +46,7 @@ if ylabel2 == "" and len(labels) == 3:
 # Initialize plot
 fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
 
+
 # Plot each data set, using first column as x-axis data
 # for i in range(1, len(labels)):
 ax1.plot(data[0], data[1])
@@ -56,6 +57,7 @@ ax1.set_title(plottitle)
 ax1.set_ylabel(ylabel1)
 ax2.set_xlabel(labels[0])
 ax2.set_ylabel(ylabel2)
+plt.tight_layout()
 
 # Save figure
 fig.savefig(outfile, dpi=600)
